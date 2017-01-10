@@ -19,7 +19,7 @@
 // =================================================================
 // Ultimate TCP/IP v4.2
 // This software along with its related components, documentation and files ("The Libraries")
-// is © 1994-2007 The Code Project (1612916 Ontario Limited) and use of The Libraries is
+// is ï¿½ 1994-2007 The Code Project (1612916 Ontario Limited) and use of The Libraries is
 // governed by a software license agreement ("Agreement").  Copies of the Agreement are
 // available at The Code Project (www.codeproject.com), as part of the package you downloaded
 // to obtain this file, or directly from our office.  For a copy of the license governing
@@ -2072,9 +2072,12 @@ int CUT_FTPClient::GetDirInfo(LPCSTR path){
             GetInfoInDOSFormat( di);
         //  call the dos function
         // end of Dos Format file names
-        else   /// Unix  Style
+        else if (m_szBuf[0] == 'd' || m_szBuf[0] == '-')   /// Unix  Style
             // Call the unix Format
             GetInfoInUNIXFormat(di);
+        else /// MVS  Style
+        // Call the MVS Format
+            GetInfoInMVSFormat(di);
 
         //increment the dirinfo count
         m_nDirInfoCount ++;
@@ -2249,9 +2252,12 @@ int CUT_FTPClient::GetDirInfoPASV(LPCSTR path){
         if ( isdigit(m_szBuf[0]))  //  call the dos function
             GetInfoInDOSFormat(di);
             // end of Dos Format file names
-        else   /// Unix  Style
+        else if (m_szBuf[0] == 'd' || m_szBuf[0] == '-')  /// Unix  Style
         // Call the unix Format
-            GetInfoInUNIXFormat( di);
+            GetInfoInUNIXFormat(di);
+        else /// MVS  Style
+        // Call the MVS Format
+            GetInfoInMVSFormat(di);
 
         //increment the dirinfo count
         m_nDirInfoCount ++;
@@ -2412,6 +2418,41 @@ int CUT_FTPClient::GetHelp(LPCSTR param) {
         _snprintf(m_szBuf,sizeof(m_szBuf)-1,"HELP\r\n");
     else
         _snprintf(m_szBuf,sizeof(m_szBuf)-1,"HELP %s\r\n",param);
+
+    Send(m_szBuf);
+
+    //check for a return of 2??
+    int rt = GetResponseCode(this);
+
+    if(rt == 0)
+        return OnError(UTE_NO_RESPONSE);   //no response
+
+    else if(rt >=0 && rt <=299)
+        return OnError(UTE_SUCCESS);
+
+    return OnError(UTE_SVR_REQUEST_DENIED);
+}
+/***************************************
+Syst
+    Returns system information from the
+    currently connected server. Once this
+    command completes successfully then
+    the information can be retrieved using
+    the GetLastResponse function.
+Params
+    none
+Return
+    UTE_SUCCESS             - success
+    UTE_NO_RESPONSE         - no response
+    UTE_SVR_REQUEST_DENIED  - request denied by server
+****************************************/
+int CUT_FTPClient::Syst() {
+
+    // clear response list
+    m_listResponse.ClearList();
+
+    //send the help command
+    _snprintf(m_szBuf,sizeof(m_szBuf)-1,"SYST\r\n");
 
     Send(m_szBuf);
 
@@ -2969,6 +3010,129 @@ void CUT_FTPClient::GetInfoInUNIXFormat( CUT_DIRINFOA * di){
     else
         di->year = atoi(buf);
 
+}
+/***********************************************
+GetInfoInMVSFormat()
+        This function parses the directory entry information
+        based on the MVS format.
+PARAM:
+      CUT_DIRINFO di - the directory information entry to be populated
+RET:
+      VOID
+**********************************************/
+void CUT_FTPClient::GetInfoInMVSFormat( CUT_DIRINFOA * di){
+
+
+    const char *Month[]={"Jan","Feb","Mar","Apr","May","Jun","Jul",
+        "Aug","Sep","Oct","Nov","Dec"};
+
+    char        buf[32];
+    int         loop;
+    time_t      timer;
+    struct tm   *tblock;
+    long        value;
+	int			linksIncluded = 0;
+    di->fileName[0] = '\0';
+    
+    // Migrated file
+    if (true/*strstr(m_szBuf, "Migrated") == m_szBuf*/) {
+        auto pch = strrchr(m_szBuf, ' ');
+        strcpy(di->fileName, pch);
+        
+        di->fileSize = 0;
+        
+        di->day = 1;
+        di->month = 1;
+        di->year = 1900;
+        di->hour = 00;
+        di->minute = 00;
+        
+        di->isDir = FALSE;
+    }/*
+    else {
+    // Get the file name
+    int nSpaces = 0;
+    loop = 0;
+
+	// check if the links or blocks attribute is included in the server answer
+	if (CUT_StrMethods::GetParseStringPieces (m_szBuf," ") > 8)
+		linksIncluded = 0 ;
+	else
+		linksIncluded = -1;
+
+	while(m_szBuf[loop] != 0) {
+        if(m_szBuf[loop] == ' ') {
+            ++ nSpaces;
+			int spaceCounter = 0;
+            while(m_szBuf[loop] == ' ')
+			{
+				spaceCounter++;
+				++ loop;
+			}
+
+            }
+        else if(nSpaces == 8 +linksIncluded) {
+            strncpy(di->fileName, &m_szBuf[loop], sizeof(di->fileName));
+            break;
+            }
+        else
+            ++ loop;
+    }
+
+
+    //directory  attrib
+    if(m_szBuf[0]=='d' || m_szBuf[0] =='D')
+        di->isDir = TRUE;
+    else if (m_szBuf[0]=='l' || m_szBuf[0] =='L')
+		di->isDir = 2;	//WARNING: HACK!
+    else
+        di->isDir = FALSE;
+
+    //file size
+    di->fileSize = 0;
+    CUT_StrMethods::ParseString(m_szBuf," ",4+linksIncluded,&di->fileSize);
+
+    //month portion of the file date
+    di->month = 1;
+    CUT_StrMethods::ParseString(m_szBuf," ",5+linksIncluded,buf,sizeof(buf));
+
+    //find the month number from the string
+    for(loop=0;loop<12;loop++) {
+        if(_stricmp(buf,Month[loop])==0) {
+            di->month = loop+1;
+            break;
+            }
+        }
+
+    //day portion of the file date
+    di->day =1;
+    CUT_StrMethods::ParseString(m_szBuf," ",6+linksIncluded,&value);
+    di->day = (int)value;
+
+    //year and or hour portion of the file date
+    di->year = 1900;        // a unix type of ls -l will give a year or a time - not both
+    di->hour = 00;          // we default to current year (below) and 12:00AM
+    di->minute = 00;
+    CUT_StrMethods::ParseString(m_szBuf," ",7+linksIncluded,buf,sizeof(buf));
+
+    //check to see if it is a time
+    if(strstr(buf,":") != NULL) {
+        //get the current year
+        timer = time(NULL);                 // default to current year...
+        tblock = localtime(&timer);
+        di->year = tblock->tm_year+1900;
+        //get the hour
+        CUT_StrMethods::ParseString(buf,":",0,&value);
+        di->hour = (int)value;
+		// So all of the time shown is
+        //get the minute
+        CUT_StrMethods::ParseString(buf,":",1,&value);
+        di->minute = (int)value;
+		// So all of the time shown is
+        }
+    else
+        di->year = atoi(buf);
+    }*/
 }
 
 /***********************************************

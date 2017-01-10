@@ -17,29 +17,34 @@
 */
 
 #include "StdInc.h"
+#include "FTPSession.h"
 //#include "FileObject.h"
 
 #include <algorithm>
 
 
-FileObject::FileObject(const char* path, bool _isDir, bool _isLink) :
+FileObject::FileObject(const char* path, bool _isDir, bool _isLink,
+                       const FTPSession * const session) :
 	m_isDir(_isDir),
 	m_isLink(_isLink),
 	m_childCount(0),
 	m_parent(NULL),
 	m_needRefresh(_isDir),	//refresh only required for dirs
 	m_data(NULL),
-	m_size(-1)
+	m_size(-1),
+        m_session(session)
 {
 	size_t len = strlen(path)+1;
 	m_path = new char[len];
 	strcpy(m_path, path);
 
-	m_name = strrchr(m_path, '/');
-	if (m_name[1] != 0)		//root directory case
-		m_name++;			//skip slash
-
-	m_localName = SU::Utf8ToTChar(m_name);
+        m_name = strrchr(m_path, m_session->GetServerSeparator());
+        if (m_name == NULL)
+            m_name = m_path;
+	if (m_session->GetServerHasRoot() && m_name[1] != 0) //root directory case
+		m_name++; //skip slash
+	
+        m_localName = SU::Utf8ToTChar(m_name);
 
 	FILETIME ft;
 	SYSTEMTIME st;
@@ -52,10 +57,12 @@ FileObject::FileObject(const char* path, bool _isDir, bool _isLink) :
 	m_atime = ft;
 }
 
-FileObject::FileObject(FTPFile * ftpfile) :
+FileObject::FileObject(FTPFile * ftpfile,
+                       const FTPSession * const session) :
 	m_childCount(0),
 	m_parent(NULL),
-	m_data(NULL)
+	m_data(NULL),
+        m_session(session)
 {
 	m_isDir = (ftpfile->fileType != FTPTypeFile);
 	m_isLink = (ftpfile->fileType == FTPTypeLink);
@@ -63,10 +70,14 @@ FileObject::FileObject(FTPFile * ftpfile) :
 	m_needRefresh = m_isDir;	//refresh only required for dirs
 
 	m_path = SU::strdup(ftpfile->filePath);
+        
+        // TODO: Try to find separator if server type is AUTO.
+        m_name = strrchr(m_path, m_session->GetServerSeparator()); 
+        if (m_name == NULL)
+            m_name = m_path;
 
-	m_name = strrchr(m_path, '/');
-	if (m_name[1] != 0)		//root directory case
-		m_name++;			//skip slash
+	if (m_session->GetServerHasRoot() && m_name[1] != 0) //root directory case
+		m_name++; //skip slash
 
 	m_localName = SU::Utf8ToTChar(m_name);
 

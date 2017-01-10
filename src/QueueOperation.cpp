@@ -362,16 +362,18 @@ const char* QueueUpload::GetExternalPath() {
 
 //////////////////////////////////////
 
-QueueGetDir::QueueGetDir(HWND hNotify, const char * dirPath, int notifyCode, void * notifyData) :
+QueueGetDir::QueueGetDir(HWND hNotify, const char * dirPath, struct ServerTypeTraits serverTraits, int notifyCode, void * notifyData) :
 	QueueOperation(QueueTypeDirectoryGet, hNotify, notifyCode, notifyData),
-	m_fileCount(0)
+	m_fileCount(0),
+        m_serverTraits(serverTraits)
 {
 	m_dirPath = SU::strdup(dirPath);
 }
 
-QueueGetDir::QueueGetDir(HWND hNotify, const char * dirPath, std::vector<char*> inputParentDirs, int notifyCode, void * notifyData) :
+QueueGetDir::QueueGetDir(HWND hNotify, const char * dirPath, struct ServerTypeTraits serverTraits, std::vector<char*> inputParentDirs, int notifyCode, void * notifyData) :
 	QueueOperation(QueueTypeDirectoryGet, hNotify, notifyCode, notifyData),
-	m_fileCount(0)
+	m_fileCount(0),
+        m_serverTraits(serverTraits)
 {
 
 	size_t i;
@@ -400,7 +402,6 @@ int QueueGetDir::Perform() {
 		m_result = m_client->Connect();
 		if (m_result == -1)
 			return m_result;
-		m_result = -1;
 	}
 
     if (parentDirs.size() > 0) {
@@ -410,7 +411,7 @@ int QueueGetDir::Perform() {
 
             FTPFile* files;
             char* currentDir = parentDirs[i];
-            int result = m_client->GetDir(currentDir, &files);
+            int result = m_client->GetDir(currentDir, &files, m_serverTraits);
             if (result == -1)
                 return result;
 
@@ -423,7 +424,7 @@ int QueueGetDir::Perform() {
     }
 
 	FTPFile* files;
-	m_result = m_client->GetDir(m_dirPath, &files);
+	m_result = m_client->GetDir(m_dirPath, &files, m_serverTraits);
 
 	if (m_result == -1)
 		return m_result;

@@ -25,6 +25,7 @@
 #include <libssh/sftp.h>
 #include "FTPFile.h"
 #include "SSLCertificates.h"
+#include "ServerType.h"
 
 enum Client_Type { Client_SSL, Client_SSH };
 
@@ -47,7 +48,7 @@ public:
 	virtual int				SetCertificates(vX509 * x509Vect);
 
 	virtual BOOL			IsConnected();
-protected:
+public:
 	virtual int				GetResponseCode(CUT_WSClient *ws,LPSTR string = NULL,int maxlen = 0);
 
 	virtual BOOL			ReceiveFileStatus(long bytesReceived);
@@ -68,7 +69,7 @@ protected:
 
 class FTPClientWrapper {
 public:
-							FTPClientWrapper(Client_Type type, const char * host, int port, const char * user, const char * password);
+                                                FTPClientWrapper(Client_Type type, const char * host, int port, const char * user, const char * password);
 	virtual					~FTPClientWrapper();
 
 	virtual FTPClientWrapper*	Clone() = 0;	//Copy settings, but not connection status or anything
@@ -83,8 +84,11 @@ public:
 	virtual int				Disconnect() = 0;
 
 	//Don't forget to call releasedir
-	virtual int				GetDir(const char * path, FTPFile** files) = 0;
+	virtual int				GetDir(const char * path, FTPFile** files,
+                                                       struct ServerTypeTraits& serverTraits) = 0;
 	static int				ReleaseDir(FTPFile* files, int size);
+        
+        virtual int				Syst(int& serverType) = 0;
 
 	virtual int				Cwd(const char * path) = 0;
 	virtual int				Pwd(char* buf, size_t size) = 0;	//Guarantee no trailing slash (unless root)
@@ -104,7 +108,7 @@ public:
 
 	virtual bool			IsConnected();
 	virtual int				Abort();
-protected:
+public:
 	virtual int				OnReturn(int res);	//for use with time consuming operations
 
 	Client_Type				m_type;
@@ -126,7 +130,7 @@ protected:
 
 class FTPClientWrapperSSH : public FTPClientWrapper {
 public:
-							FTPClientWrapperSSH(const char * host, int port, const char * user, const char * password);
+						FTPClientWrapperSSH(const char * host, int port, const char * user, const char * password);
 	virtual					~FTPClientWrapperSSH();
 
 	virtual FTPClientWrapper*	Clone();
@@ -134,7 +138,10 @@ public:
 	virtual int				Connect();
 	virtual int				Disconnect();
 
-	virtual int				GetDir(const char * path, FTPFile** files);
+	virtual int				GetDir(const char * path, FTPFile** files,
+                                                       struct ServerTypeTraits& serverTraits);
+        
+        virtual int				Syst(int& serverType);
 
 	virtual int				Cwd(const char * path);
 	virtual int				Pwd(char* buf, size_t size);
@@ -182,7 +189,7 @@ protected:
 
 class FTPClientWrapperSSL : public FTPClientWrapper {
 public:
-							FTPClientWrapperSSL(const char * host, int port, const char * user, const char * password);
+                                                FTPClientWrapperSSL(const char * host, int port, const char * user, const char * password);
 	virtual					~FTPClientWrapperSSL();
 
 	virtual FTPClientWrapper*	Clone();
@@ -194,7 +201,10 @@ public:
 	virtual int				Connect();
 	virtual int				Disconnect();
 
-	virtual int				GetDir(const char * path, FTPFile** files);
+	virtual int				GetDir(const char * path, FTPFile** files,
+                                                       struct ServerTypeTraits& serverTraits);
+        
+        virtual int				Syst(int& serverType);
 
 	virtual int				Cwd(const char * path);
 	virtual int				Pwd(char* buf, size_t size);
@@ -224,7 +234,7 @@ public:
 	virtual int				SetListParams(const char * params);
 
 	virtual int				Quote(const char * quote);
-protected:
+public:
 	FtpSSLWrapper			m_client;
 	CUT_FTPClient::FTPSMode	m_mode;
 	char*					m_ftpListParams;

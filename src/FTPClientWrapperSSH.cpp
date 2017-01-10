@@ -21,6 +21,7 @@
 
 #include "MessageDialog.h"
 #include "KBIntDialog.h"
+#include "FTPSession.h"
 #include <fcntl.h>
 
 #ifdef strdup	//undefine strdup form libssh
@@ -81,7 +82,8 @@ int FTPClientWrapperSSH::Disconnect() {
 	return OnReturn(0);
 }
 
-int FTPClientWrapperSSH::GetDir(const char * path, FTPFile** files) {
+int FTPClientWrapperSSH::GetDir(const char * path, FTPFile** files,
+                                struct ServerTypeTraits& serverTraits) {
 	sftp_dir dir;
 	sftp_attributes sfile;
 	FTPFile file;
@@ -99,7 +101,7 @@ int FTPClientWrapperSSH::GetDir(const char * path, FTPFile** files) {
 		return OnReturn(-1);
 	}
 
-	bool endslash = path[strlen(path)-1] == '/';
+	bool endslash = path[strlen(path)-1] == serverTraits.separators;
 
 	/* reading the whole directory, file by file */
 	while((sfile = sftp_readdir(m_sftpsession, dir)) && !m_aborting) {
@@ -110,7 +112,7 @@ int FTPClientWrapperSSH::GetDir(const char * path, FTPFile** files) {
 
 		strcpy(file.filePath, path);
 		if (!endslash) {
-			strcat(file.filePath, "/");
+			strcat(file.filePath, &serverTraits.separators);
 		}
 		strcat(file.filePath, sfile->name);
 		file.fileSize = (long)sfile->size;
@@ -161,6 +163,12 @@ int FTPClientWrapperSSH::GetDir(const char * path, FTPFile** files) {
 
 	*files = arrayFiles;
 	return OnReturn(count);
+}
+
+int FTPClientWrapperSSH::Syst(int& serverType) {
+    /*int retcode = m_client.Syst();
+    return OnReturn((retcode == UTE_SUCCESS)?0:-1);*/
+    return 0;
 }
 
 int FTPClientWrapperSSH::Cwd(const char * path) {

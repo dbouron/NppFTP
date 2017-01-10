@@ -1121,7 +1121,7 @@ int FTPWindow::OnDirectoryRefresh(FileObject * parent, FTPFile * files, int coun
 	parent->SetRefresh(false);
 	parent->RemoveAllChildren(false);
 	for(int i = 0; i < count; i++) {
-		parent->AddChild(new FileObject(files+i));
+		parent->AddChild(new FileObject(files+i, m_ftpSession));
 	}
 	parent->Sort();
 	//The treeview is out of sync here, make sure no GUI calls go between this function and the next call
@@ -1159,8 +1159,6 @@ int FTPWindow::OnItemActivation() {
 int FTPWindow::OnConnect(int code) {
 	if (code != 0)	//automated connect
 		return 0;
-
-
 
 	FileObject * root = m_ftpSession->GetRootObject();
 	m_treeview.AddRoot(root);

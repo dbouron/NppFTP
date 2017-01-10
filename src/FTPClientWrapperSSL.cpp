@@ -21,7 +21,7 @@
 
 #include "SSLCertificates.h"
 #include "MessageDialog.h"
-#include <algorithm>
+#include "FTPSession.h"
 
 FTPClientWrapperSSL::FTPClientWrapperSSL(const char * host, int port, const char * user, const char * password) :
 	FTPClientWrapper(Client_SSL, host, port, user, password),
@@ -98,7 +98,8 @@ int FTPClientWrapperSSL::Disconnect() {
 	return OnReturn((retcode == UTE_SUCCESS)?0:-1);
 }
 
-int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files) {
+int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files,
+                                struct ServerTypeTraits& serverTraits) {
 	int retcode = 0;
 	CUT_DIRINFO di;
 	FTPFile * ftpfiles;
@@ -128,7 +129,7 @@ int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files) {
 		return OnReturn(-1);
 	}
 
-	bool endslash = path[strlen(path)-1] == '/';
+	bool endslash = path[strlen(path)-1] == serverTraits.separators;
 
 	if (retcode != UTE_SUCCESS)
 	{
@@ -162,7 +163,7 @@ int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files) {
 
 		strcpy(ftpfile.filePath, path);
 		if (!endslash) {
-			strcat(ftpfile.filePath, "/");
+			strcat(ftpfile.filePath, &serverTraits.separators);
 		}
 		strcat(ftpfile.filePath, nameCpy);
 /*
@@ -212,6 +213,24 @@ int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files) {
 	*files = ftpfiles;
 
 	return OnReturn(vfiles.size());
+}
+
+int FTPClientWrapperSSL::Syst(int& serverType) {
+    auto retcode = m_client.Syst();
+    auto buf = m_client.GetLastResponse();
+    
+    if (serverType == AUTO) {
+        if (strstr(buf, "UNIX") != NULL)
+            serverType = UNIX;
+        else if (strstr(buf, "DOS") != NULL)
+            serverType = DOS;
+        else if (strstr(buf, "MVS") != NULL
+                 || strstr(buf, "z/OS") != NULL)
+            serverType = MVS;
+        else
+            serverType = UNIX; // Default is UNIX.
+    }
+    return OnReturn((retcode == UTE_SUCCESS)?0:-1);
 }
 
 int FTPClientWrapperSSL::Cwd(const char * path) {

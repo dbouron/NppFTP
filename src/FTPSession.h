@@ -19,13 +19,17 @@
 #ifndef FTPSESSION_H
 #define FTPSESSION_H
 
+#include <algorithm>
+
 #include "FTPSettings.h"
 #include "FTPProfile.h"
 #include "FTPCache.h"
 #include "FTPQueue.h"
 #include "SSLCertificates.h"
+#include "ServerType.h"
 
 class FTPWindow;
+
 
 class FTPSession {
 public:
@@ -66,7 +70,11 @@ public:
 	int						AbortOperation();
 	int						AbortTransfer();
 	int						CancelOperation(QueueOperation * cancelOp);
-private:
+        
+        const char                                      GetServerSeparator() const;
+        const char                                      GetServerEnclosure() const;
+        const bool                                      GetServerHasRoot() const;
+public:
 	int						Clear();
 
 	FTPProfile*				m_currentProfile;
@@ -88,6 +96,8 @@ private:
 	FileObject*				m_rootObject;
 
 	vX509*					m_certificates;
+        
+        struct ServerTypeTraits                 m_serverTypeTraits;
 };
 
 #endif //FTPSESSION_H

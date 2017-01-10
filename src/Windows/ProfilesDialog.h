@@ -22,6 +22,7 @@
 #include "Dialog.h"
 #include "ChildDialog.h"
 #include "FTPProfile.h"
+#include "ServerType.h"
 
 class FTPWindow;
 

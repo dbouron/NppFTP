@@ -20,15 +20,19 @@
 #define FILEOBJECT_H
 
 #include "FTPFile.h"
+//#include "FTPSession.h"
 
 class FileObject;
+class FTPSession;
 
 typedef std::vector<FileObject*> FOVector;
 
 class FileObject {
 public:
-							FileObject(const char* path, bool isDir, bool isLink);
-							FileObject(FTPFile * ftpfile);
+						FileObject(const char* path, bool isDir, bool isLink,
+                                                           const FTPSession * const session);
+						FileObject(FTPFile * ftpfile,
+                                                           const FTPSession * const session);
 	virtual					~FileObject();
 
 	virtual int				GetChildCount() const;
@@ -87,6 +91,10 @@ protected:
 	FILETIME				m_ctime;
 	FILETIME				m_mtime;
 	FILETIME				m_atime;
+        
+        // Pointer to session in order to get server type traits.
+        // Do not delete this pointer.
+        const FTPSession * const                m_session;
 };
 
 #endif //FILEOBJECT_H

@@ -39,7 +39,9 @@ FTPSession::FTPSession() :
 
 	m_rootObject(NULL),
 
-	m_certificates(NULL)
+	m_certificates(NULL),
+        
+        m_serverTypeTraits(serverTraits[0])
 {
 }
 
@@ -85,6 +87,7 @@ int FTPSession::StartSession(FTPProfile * sessionProfile) {
 
 	m_currentProfile = sessionProfile;
 	m_currentProfile->AddRef();
+        m_serverTypeTraits = serverTraits[m_currentProfile->GetServerType()];
 
 	m_ftpSettings->GetGlobalCache()->SetEnvironment(m_currentProfile->GetHostname(), m_currentProfile->GetUsername());
 
@@ -103,8 +106,11 @@ int FTPSession::StartSession(FTPProfile * sessionProfile) {
 
 	m_mainQueue->Initialize();
 	m_transferQueue->Initialize();
-
-	m_rootObject = new FileObject("/", true, false);
+        
+        auto rootDir = "/";
+        if (!this->m_serverTypeTraits.hasRoot)
+            rootDir = m_currentProfile->GetInitialDir();
+	m_rootObject = new FileObject(rootDir, true, false, this);
 	m_rootObject->SetParent(m_rootObject);
 
 	m_running = true;
@@ -157,7 +163,7 @@ int FTPSession::GetDirectory(const char * dir) {
 	if (!m_running)
 		return -1;
 
-	QueueGetDir * dirop = new QueueGetDir(m_hNotify, dir);
+	QueueGetDir * dirop = new QueueGetDir(m_hNotify, dir, m_serverTypeTraits);
 
 	m_mainQueue->AddQueueOp(dirop);
 
@@ -179,11 +185,11 @@ int FTPSession::GetDirectoryHierarchy(const char * inputDir) {
     char currentPath[MAX_PATH];
     FileObject* currentFileObj = m_rootObject;
 
-    strcpy( currentPath, "/" );
+    strcpy( currentPath, m_currentProfile->GetInitialDir() );
 
     // Split the entries based on '/' and append the
     // previous directory name to get the full path.
-    pathEntry = strtok (dir,"/");
+    pathEntry = strtok (dir, &m_serverTypeTraits.separators);
     while(pathEntry != NULL) {
 
         if (currentFileObj) {
@@ -197,7 +203,7 @@ int FTPSession::GetDirectoryHierarchy(const char * inputDir) {
                 if (hti) {
 
                     sprintf(currentPath,"%s%s/", currentPath, pathEntry);
-                    pathEntry = strtok (NULL,"/");
+                    pathEntry = strtok (NULL, &m_serverTypeTraits.separators);
 
                     continue;
                 }
@@ -221,7 +227,7 @@ int FTPSession::GetDirectoryHierarchy(const char * inputDir) {
         sprintf(currentPath,"%s%s/", currentPath, pathEntry);
 
         parentDirs.push_back(SU::strdup(currentPath));
-        pathEntry = strtok (NULL,"/");
+        pathEntry = strtok (NULL, &m_serverTypeTraits.separators);
     }
 
     // If there is some parent directories to be examined,
@@ -230,7 +236,7 @@ int FTPSession::GetDirectoryHierarchy(const char * inputDir) {
     if (parentDirs.size())
         parentDirs.pop_back();
 
-	QueueGetDir * dirop = new QueueGetDir(m_hNotify, inputDir, parentDirs);
+	QueueGetDir * dirop = new QueueGetDir(m_hNotify, inputDir, m_serverTypeTraits, parentDirs);
 
 	m_mainQueue->AddQueueOp(dirop);
 
@@ -407,7 +413,8 @@ FileObject* FTPSession::GetRootObject() {
 
 	int res = 0;
 
-	if (strlen(dir) < 1 || dir[0] != '/') {	//no initial dir or invalid
+	if (strlen(dir) < 1 
+                || (m_serverTypeTraits.hasRoot && dir[0] != '/')) {	//no initial dir or invalid
 		res = -1;
 	} else {
 		res = m_mainWrapper->Cwd(dir);
@@ -416,16 +423,23 @@ FileObject* FTPSession::GetRootObject() {
 	if (res == -1) {
 		res = m_mainWrapper->Pwd(&dir[0], MAX_PATH);
 	}
+        
+        // Get system informations after changing current directory.
+        // If not, on z/OS, you can receive a UNIX system type depending to
+        // initial remote directory.
+        auto serverType = 0;
+        m_mainWrapper->Syst(serverType);
+        m_currentProfile->SetServerType(static_cast<ServerType>(serverType));
 
 	if (res == -1 || strlen(dir) <= 1)
 		return m_rootObject;
 
 	FileObject * child = NULL;
-	child = new FileObject(dir, true, false);
+	child = new FileObject(dir, true, false, this);
 	FileObject * prevDir = NULL;
 	prevDir = child;
 	char * curDir;
-	curDir = strrchr(dir, '/');
+	curDir = strrchr(dir, m_serverTypeTraits.separators);
 	while(curDir != NULL) {
 		if (curDir == dir) {
 			child = m_rootObject;
@@ -435,14 +449,13 @@ FileObject* FTPSession::GetRootObject() {
 		}
 
 		*curDir = 0;
-		child = new FileObject(dir, true, false);
+		child = new FileObject(dir, true, false, this);
 		child->AddChild(prevDir);
 		child->SetRefresh(false);
 		prevDir = child;
 
-		curDir = strrchr(dir, '/');
+		curDir = strrchr(dir, m_serverTypeTraits.separators);
 	}
-
 	return m_rootObject;
 }
 
@@ -488,6 +501,18 @@ int FTPSession::AbortTransfer() {
 
 int FTPSession::CancelOperation(QueueOperation * cancelOp) {
 	return m_transferQueue->CancelQueueOp(cancelOp);
+}
+
+const char FTPSession::GetServerSeparator() const {
+    return m_serverTypeTraits.separators;
+}
+
+const char FTPSession::GetServerEnclosure() const {
+    return m_serverTypeTraits.enclosure;
+}
+
+const bool FTPSession::GetServerHasRoot() const {
+    return m_serverTypeTraits.hasRoot;
 }
 
 int FTPSession::Clear() {

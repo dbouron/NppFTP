@@ -21,6 +21,7 @@
 
 #include "FTPClientWrapper.h"
 #include "FTPCache.h"
+#include "ServerType.h"
 
 class FTPProfile;
 typedef std::vector<FTPProfile*> vProfile;
@@ -59,6 +60,8 @@ public:
 
 	Security_Mode			GetSecurityMode() const;
 	int						SetSecurityMode(Security_Mode mode);
+        const ServerType GetServerType() const;
+        int SetServerType(ServerType mode);
 	Transfer_Mode			GetTransferMode() const;
 	int						SetTransferMode(Transfer_Mode mode);
 	Connection_Mode			GetConnectionMode() const;
@@ -140,6 +143,7 @@ private:
 	char*					m_ftpListParams;
 
 	char*					m_initialDir;
+        ServerType m_serverType;
 
 	vString					m_asciiTypes;
 	vString					m_binTypes;

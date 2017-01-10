@@ -310,6 +310,17 @@ int FTPProfile::SetSecurityMode(Security_Mode mode) {
 	return 0;
 }
 
+const ServerType FTPProfile::GetServerType() const
+{
+  return m_serverType;
+}
+
+int FTPProfile::SetServerType(ServerType serverType)
+{
+  m_serverType = serverType;
+  return 0;
+}
+
 Transfer_Mode FTPProfile::GetTransferMode() const {
 	return m_transferMode;
 }
@@ -597,6 +608,7 @@ FTPProfile* FTPProfile::LoadProfile(const TiXmlElement * profileElem) {
 			profile->m_hostname = SU::strdup(attrstr);
 
 		profileElem->Attribute("port", &profile->m_port);
+                profileElem->Attribute("serverType", (int*)(&profile->m_serverType));
 
 		attrstr = profileElem->Attribute("username");
 		if (!attrstr)
@@ -706,6 +718,7 @@ TiXmlElement* FTPProfile::SaveProfile() const {
 	SU::FreeChar(utf8name);
 	profileElem->SetAttribute("hostname", m_hostname);
 	profileElem->SetAttribute("port", m_port);
+        profileElem->SetAttribute("serverType", m_serverType);
 	profileElem->SetAttribute("username", m_username);
 
 	char * encryptPass = Encryption::Encrypt(NULL, -1, m_askPassword?"":m_password, -1);	//when asking for password, do not store the password

@@ -179,11 +179,11 @@ protected:
 
 class QueueGetDir : public QueueOperation {
 public:
-							QueueGetDir(HWND hNotify, const char * dirPath, int notifyCode = 0, void * notifyData = NULL);
-							QueueGetDir(HWND hNotify, const char * dirPath, std::vector<char*> inputParentDirs, int notifyCode = 0, void * notifyData = NULL);
-	virtual					~QueueGetDir();
+					QueueGetDir(HWND hNotify, const char * dirPath, struct ServerTypeTraits serverTraits, int notifyCode = 0, void * notifyData = NULL);
+					QueueGetDir(HWND hNotify, const char * dirPath, struct ServerTypeTraits serverTraits, std::vector<char*> inputParentDirs, int notifyCode = 0, void * notifyData = NULL);
+	virtual				~QueueGetDir();
 
-	virtual int				Perform();
+	virtual int			Perform();
 
 	virtual bool			Equals(const QueueOperation & other);
 
@@ -196,6 +196,7 @@ protected:
 	int						m_fileCount;
 	std::vector<char*>      parentDirs;
 	std::vector<FTPDir*>    parentDirObjs;
+        struct ServerTypeTraits m_serverTraits;
 };
 
 class QueueCreateDir : public QueueOperation {

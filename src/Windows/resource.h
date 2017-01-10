@@ -120,4 +120,5 @@
 	#define IDC_EDIT_PROMPTMAX			182
 	#define IDC_EDIT_ANSWERMAX			183
 	#define IDC_STATIC_MARKER			184
-//next id:								195
+#define IDC_COMBO_SERVER                        195
+//next id:								196

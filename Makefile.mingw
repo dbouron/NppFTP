@@ -9,7 +9,7 @@ OUTDIR = x86
 endif
 
 CXX    = $(PREFIX)-g++
-CFLAGS = -MMD -Os -O3 -Wall -Wno-unused-value -Werror -fexpensive-optimizations -DLIBSSH_STATIC -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE
+CFLAGS = -MMD -std=c++11 -Wall -Wno-unused-value -DLIBSSH_STATIC -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE
 LFLAGS = -static -L$(OUTDIR)/obj -L$(OUTDIR)/3rdparty/lib -lcomdlg32 -lcomctl32 -luuid -lole32 -lshlwapi -lssh -lssl -lcrypto -lz -lgdi32 -lws2_32
 INC    = -I$(OUTDIR)/3rdparty/include -Isrc -Isrc/Windows -Itinyxml/include -IUTCP/include -I.
 RES    = $(OUTDIR)/obj/NppFTP.res
@@ -29,7 +29,9 @@ OBJECTS_D  = $(TXML_OBJ_D) $(UTCP_OBJ_D) $(NPP_OBJ_D)
 DEPENDS_D  = ${OBJECTS_D:.o=.d}
 
 all:     release
+debug:   CFLAGS += -g3 -fno-inline
 debug:   $(OUTDIR)/bin $(OUTDIR)/obj $(OUTDIR)/3rdparty $(TGT_D)
+release: CFLAGS += -Os -O3 -fexpensive-optimizations
 release: $(OUTDIR)/bin $(OUTDIR)/obj $(OUTDIR)/3rdparty $(TGT)
 	@echo ============ creating NppFTP-$(OUTDIR).zip ============
 	@cp -R doc $(OUTDIR)/ && cd $(OUTDIR) && zip -9 -r ../NppFTP-$(OUTDIR).zip bin/ doc/

@@ -226,7 +226,14 @@ INT_PTR ProfilesDialog::OnCommand(int ctrlId, int notifCode, HWND idHwnd) {
 				}
 			}
 			break; }
-
+                case IDC_COMBO_SERVER: {
+                  if (notifCode == CBN_SELCHANGE) {
+                    int sel = ComboBox_GetCurSel(idHwnd);
+                    if (sel != CB_ERR) {
+                      m_currentProfile->SetServerType((ServerType)sel);      //index matches enum
+                    }
+                  }
+                  break; }
 		case IDC_EDIT_KEYFILE: {
 			if (notifCode == EN_USERCHANGE) {
 				GetWindowText(idHwnd, TTextBuffer, MAX_PATH);
@@ -576,6 +583,10 @@ INT_PTR ProfilesDialog::OnInitDialog() {
 	ComboBox_AddString(hCombobox, TEXT("FTPS (Implicit)"));
 	ComboBox_AddString(hCombobox, TEXT("SFTP"));
 
+        HWND hCombobox2 = ::GetDlgItem(m_hPageConnection, IDC_COMBO_SERVER);
+        for (const auto& e : serverNames)
+          ComboBox_AddString(hCombobox2, e.second);
+
 	int ret = LoadProfiles();
 	if (ret == -1) {
 		EndDialog(m_hwnd, -1);
@@ -701,6 +712,9 @@ int ProfilesDialog::OnSelectProfile(FTPProfile * profile) {
 
 	HWND hCombobox = ::GetDlgItem(m_hPageConnection, IDC_COMBO_SECURITY);
 	ComboBox_SetCurSel(hCombobox, (int)m_currentProfile->GetSecurityMode());
+        
+        HWND hCombobox2 = ::GetDlgItem(m_hPageConnection, IDC_COMBO_SERVER);
+	ComboBox_SetCurSel(hCombobox2, (int)m_currentProfile->GetServerType());
 
 	bool isActive = m_currentProfile->GetConnectionMode() == Mode_Active;
 	bool isAscii = m_currentProfile->GetTransferMode() == Mode_ASCII;
@@ -745,6 +759,9 @@ int ProfilesDialog::Clear() {
 
 	HWND hCombobox = ::GetDlgItem(m_hPageConnection, IDC_COMBO_SECURITY);
 	ComboBox_SetCurSel(hCombobox, 0);
+
+        HWND hCombobox2 = ::GetDlgItem(m_hPageConnection, IDC_COMBO_SERVER);
+        ComboBox_SetCurSel(hCombobox2, 0);
 
 	CheckRadioButton(m_hPageTransfer, IDC_RADIO_ACTIVE, IDC_RADIO_PASSIVE, IDC_RADIO_ACTIVE);
 	CheckRadioButton(m_hPageTransfer, IDC_RADIO_ASCII, IDC_RADIO_BINARY, IDC_RADIO_ASCII);

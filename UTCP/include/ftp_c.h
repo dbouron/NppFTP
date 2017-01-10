@@ -24,7 +24,7 @@
 // =================================================================
 // Ultimate TCP/IP v4.2
 // This software along with its related components, documentation and files ("The Libraries")
-// is © 1994-2007 The Code Project (1612916 Ontario Limited) and use of The Libraries is
+// is ï¿½ 1994-2007 The Code Project (1612916 Ontario Limited) and use of The Libraries is
 // governed by a software license agreement ("Agreement").  Copies of the Agreement are
 // available at The Code Project (www.codeproject.com), as part of the package you downloaded
 // to obtain this file, or directly from our office.  For a copy of the license governing
@@ -200,6 +200,9 @@ protected: // changed to protected to allow for inheritance
 
 	// Get the directory information in a DOS format
 	virtual void	GetInfoInDOSFormat( CUT_DIRINFOA * di);
+        
+	// Get the directory information in a DOS format
+	virtual void	GetInfoInMVSFormat( CUT_DIRINFOA * di);
 
 public:
 	virtual void setsMode(FTPSMode mode) {m_sMode = mode;};
@@ -346,6 +349,8 @@ public:
 #if defined _UNICODE
 	virtual int		GetHelp(LPCWSTR param);
 #endif
+        
+        virtual int Syst();
 
 	// send a custom to be excuted on the server
 	virtual int		Quote(LPCSTR command);
