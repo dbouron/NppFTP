@@ -44,6 +44,7 @@ FTPProfile::FTPProfile() :
 	m_initialDir(NULL),
 	m_keyFile(NULL),
 	m_passphrase(NULL),
+	m_serverType(AUTO),
 	m_useAgent(false),
 	m_acceptedMethods(Method_Password)
 {
@@ -59,6 +60,7 @@ FTPProfile::FTPProfile(const TCHAR * name) :
 	m_connectionMode(Mode_Passive),
 	m_dataPortMin(10000),
 	m_dataPortMax(32000),
+	m_serverType(AUTO),
 	m_useAgent(false),
 	m_acceptedMethods(Method_Password)
 {
@@ -86,6 +88,7 @@ FTPProfile::FTPProfile(const TCHAR * name, const FTPProfile* other) :
 	m_connectionMode(other->m_connectionMode),
 	m_dataPortMin(other->m_dataPortMin),
 	m_dataPortMax(other->m_dataPortMax),
+	m_serverType(other->m_serverType),
 	m_useAgent(other->m_useAgent),
 	m_acceptedMethods(other->m_acceptedMethods)
 {

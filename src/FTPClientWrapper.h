@@ -48,7 +48,7 @@ public:
 	virtual int				SetCertificates(vX509 * x509Vect);
 
 	virtual BOOL			IsConnected();
-public:
+protected:
 	virtual int				GetResponseCode(CUT_WSClient *ws,LPSTR string = NULL,int maxlen = 0);
 
 	virtual BOOL			ReceiveFileStatus(long bytesReceived);
@@ -108,7 +108,7 @@ public:
 
 	virtual bool			IsConnected();
 	virtual int				Abort();
-public:
+protected:
 	virtual int				OnReturn(int res);	//for use with time consuming operations
 
 	Client_Type				m_type;
@@ -234,7 +234,7 @@ public:
 	virtual int				SetListParams(const char * params);
 
 	virtual int				Quote(const char * quote);
-public:
+protected:
 	FtpSSLWrapper			m_client;
 	CUT_FTPClient::FTPSMode	m_mode;
 	char*					m_ftpListParams;

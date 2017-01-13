@@ -143,7 +143,7 @@ private:
 	char*					m_ftpListParams;
 
 	char*					m_initialDir;
-        ServerType m_serverType;
+    ServerType				m_serverType;
 
 	vString					m_asciiTypes;
 	vString					m_binTypes;

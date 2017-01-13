@@ -71,10 +71,10 @@ public:
 	int						AbortTransfer();
 	int						CancelOperation(QueueOperation * cancelOp);
         
-        const char                                      GetServerSeparator() const;
-        const char                                      GetServerEnclosure() const;
-        const bool                                      GetServerHasRoot() const;
-public:
+    const char                                      GetServerSeparator() const;
+    const char                                      GetServerEnclosure() const;
+    const bool                                      GetServerHasRoot() const;
+private:
 	int						Clear();
 
 	FTPProfile*				m_currentProfile;

@@ -402,6 +402,7 @@ int QueueGetDir::Perform() {
 		m_result = m_client->Connect();
 		if (m_result == -1)
 			return m_result;
+		m_result = -1;
 	}
 
     if (parentDirs.size() > 0) {
