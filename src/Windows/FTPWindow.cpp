@@ -1123,7 +1123,7 @@ int FTPWindow::OnDirectoryRefresh(FileObject * parent, FTPFile * files, int coun
 	for(int i = 0; i < count; i++) {
 		parent->AddChild(new FileObject(files+i, m_ftpSession));
 	}
-	parent->Sort();
+	//parent->Sort();
 	//The treeview is out of sync here, make sure no GUI calls go between this function and the next call
 	m_treeview.UpdateFileObject(parent);
 	m_treeview.FillTreeDirectory(parent);

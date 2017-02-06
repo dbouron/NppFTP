@@ -41,7 +41,7 @@ FTPSession::FTPSession() :
 
 	m_certificates(NULL),
         
-        m_serverTypeTraits(serverTraits[0])
+    m_serverTypeTraits(serverTraits[3])
 {
 }
 
@@ -429,7 +429,8 @@ FileObject* FTPSession::GetRootObject() {
         // initial remote directory.
         auto serverType = 0;
         m_mainWrapper->Syst(serverType);
-        m_currentProfile->SetServerType(static_cast<ServerType>(serverType));
+		if (m_currentProfile->GetServerType() == AUTO)
+			m_currentProfile->SetServerType(static_cast<ServerType>(serverType));
 
 	if (res == -1 || strlen(dir) <= 1)
 		return m_rootObject;
@@ -438,8 +439,9 @@ FileObject* FTPSession::GetRootObject() {
 	child = new FileObject(dir, true, false, this);
 	FileObject * prevDir = NULL;
 	prevDir = child;
-	char * curDir;
-	curDir = strrchr(dir, m_serverTypeTraits.separators);
+	char * curDir = dir;
+	//if (m_serverTypeTraits.hasRoot)
+		curDir = strrchr(dir, m_serverTypeTraits.separators);
 	while(curDir != NULL) {
 		if (curDir == dir) {
 			child = m_rootObject;
@@ -468,7 +470,7 @@ FileObject* FTPSession::FindPathObject(const char * filepath) {
 
 	FileObject * current = m_rootObject;
 
-	char * curname = strtok (tempstr, "/");
+	char * curname = NULL;// strtok (tempstr, &m_serverTypeTraits.separators);
 
 	while(curname) {
 		if (current->GetChildCount() == 0)	//search did not finish, but cannot find child
@@ -479,7 +481,7 @@ FileObject* FTPSession::FindPathObject(const char * filepath) {
 		for(i = 0; i < count; i++) {
 			if ( !strcmp( current->GetChild(i)->GetName(), curname ) ) {
 				current = current->GetChild(i);
-				curname = strtok (NULL, "/");
+				curname = strtok (NULL, &m_serverTypeTraits.separators);
 				break;
 			}
 		}

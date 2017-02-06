@@ -37,10 +37,12 @@ FileObject::FileObject(const char* path, bool _isDir, bool _isLink,
 	size_t len = strlen(path)+1;
 	m_path = new char[len];
 	strcpy(m_path, path);
-
+	
+	m_name = m_path;
+	if (m_session->GetServerHasRoot())
         m_name = strrchr(m_path, m_session->GetServerSeparator());
-        if (m_name == NULL)
-            m_name = m_path;
+    if (m_name == NULL)
+        m_name = m_path;
 	if (m_session->GetServerHasRoot() && m_name[1] != 0) //root directory case
 		m_name++; //skip slash
 	
@@ -72,7 +74,7 @@ FileObject::FileObject(FTPFile * ftpfile,
 	m_path = SU::strdup(ftpfile->filePath);
         
         // TODO: Try to find separator if server type is AUTO.
-        m_name = strrchr(m_path, m_session->GetServerSeparator()); 
+	m_name = m_path;//strrchr(m_path, m_session->GetServerSeparator()); 
         if (m_name == NULL)
             m_name = m_path;
 

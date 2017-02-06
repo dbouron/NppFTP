@@ -201,7 +201,7 @@ protected: // changed to protected to allow for inheritance
 	// Get the directory information in a DOS format
 	virtual void	GetInfoInDOSFormat( CUT_DIRINFOA * di);
         
-	// Get the directory information in a DOS format
+	// Get the directory information in a MVS format
 	virtual void	GetInfoInMVSFormat( CUT_DIRINFOA * di);
 
 public:

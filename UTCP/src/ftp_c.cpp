@@ -2735,6 +2735,7 @@ RETURN
 ********************************************************/
 LPCSTR CUT_FTPClient::GetLastResponse() const
 {
+	printf("Recv: %s\r\n", m_szResponse);
     return m_szResponse;
 }
 /*************************************************
@@ -3021,21 +3022,11 @@ RET:
       VOID
 **********************************************/
 void CUT_FTPClient::GetInfoInMVSFormat( CUT_DIRINFOA * di){
-
-
-    const char *Month[]={"Jan","Feb","Mar","Apr","May","Jun","Jul",
-        "Aug","Sep","Oct","Nov","Dec"};
-
-    char        buf[32];
-    int         loop;
-    time_t      timer;
-    struct tm   *tblock;
-    long        value;
-	int			linksIncluded = 0;
     di->fileName[0] = '\0';
     
     // Migrated file
-    if (true/*strstr(m_szBuf, "Migrated") == m_szBuf*/) {
+    if (strstr(m_szBuf, "Migrated") == m_szBuf
+		|| strstr(m_szBuf, "VSAM") != nullptr) {
         auto pch = strrchr(m_szBuf, ' ');
         strcpy(di->fileName, pch);
         
@@ -3048,91 +3039,27 @@ void CUT_FTPClient::GetInfoInMVSFormat( CUT_DIRINFOA * di){
         di->minute = 00;
         
         di->isDir = FALSE;
-    }/*
-    else {
-    // Get the file name
-    int nSpaces = 0;
-    loop = 0;
-
-	// check if the links or blocks attribute is included in the server answer
-	if (CUT_StrMethods::GetParseStringPieces (m_szBuf," ") > 8)
-		linksIncluded = 0 ;
-	else
-		linksIncluded = -1;
-
-	while(m_szBuf[loop] != 0) {
-        if(m_szBuf[loop] == ' ') {
-            ++ nSpaces;
-			int spaceCounter = 0;
-            while(m_szBuf[loop] == ' ')
-			{
-				spaceCounter++;
-				++ loop;
-			}
-
-            }
-        else if(nSpaces == 8 +linksIncluded) {
-            strncpy(di->fileName, &m_szBuf[loop], sizeof(di->fileName));
-            break;
-            }
-        else
-            ++ loop;
     }
+	else if (strcmp("Volume Unit    Referred Ext Used Recfm Lrecl BlkSz Dsorg Dsname", m_szBuf) != 0) {
+		// Not a header.
+		auto pch = strrchr(m_szBuf, ' ');
+		strcpy(di->fileName, pch);
 
+		auto tok = strtok(m_szBuf, " ");
+		for (auto i = 0; i < 8; ++i)
+			tok = strtok(NULL, " ");
+		di->isDir = FALSE;
+		if (strncmp(tok, "PO", 2) == 0)
+			di->isDir = TRUE;
 
-    //directory  attrib
-    if(m_szBuf[0]=='d' || m_szBuf[0] =='D')
-        di->isDir = TRUE;
-    else if (m_szBuf[0]=='l' || m_szBuf[0] =='L')
-		di->isDir = 2;	//WARNING: HACK!
-    else
-        di->isDir = FALSE;
+		di->fileSize = 100;
 
-    //file size
-    di->fileSize = 0;
-    CUT_StrMethods::ParseString(m_szBuf," ",4+linksIncluded,&di->fileSize);
-
-    //month portion of the file date
-    di->month = 1;
-    CUT_StrMethods::ParseString(m_szBuf," ",5+linksIncluded,buf,sizeof(buf));
-
-    //find the month number from the string
-    for(loop=0;loop<12;loop++) {
-        if(_stricmp(buf,Month[loop])==0) {
-            di->month = loop+1;
-            break;
-            }
-        }
-
-    //day portion of the file date
-    di->day =1;
-    CUT_StrMethods::ParseString(m_szBuf," ",6+linksIncluded,&value);
-    di->day = (int)value;
-
-    //year and or hour portion of the file date
-    di->year = 1900;        // a unix type of ls -l will give a year or a time - not both
-    di->hour = 00;          // we default to current year (below) and 12:00AM
-    di->minute = 00;
-    CUT_StrMethods::ParseString(m_szBuf," ",7+linksIncluded,buf,sizeof(buf));
-
-    //check to see if it is a time
-    if(strstr(buf,":") != NULL) {
-        //get the current year
-        timer = time(NULL);                 // default to current year...
-        tblock = localtime(&timer);
-        di->year = tblock->tm_year+1900;
-        //get the hour
-        CUT_StrMethods::ParseString(buf,":",0,&value);
-        di->hour = (int)value;
-		// So all of the time shown is
-        //get the minute
-        CUT_StrMethods::ParseString(buf,":",1,&value);
-        di->minute = (int)value;
-		// So all of the time shown is
-        }
-    else
-        di->year = atoi(buf);
-    }*/
+		di->day = 1;
+		di->month = 1;
+		di->year = 1900;
+		di->hour = 00;
+		di->minute = 00;
+	}
 }
 
 /***********************************************

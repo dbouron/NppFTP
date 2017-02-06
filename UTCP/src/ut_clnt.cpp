@@ -857,6 +857,7 @@ int CUT_WSClient::Send(LPCSTR data, int len)
         len = (int)strlen((char *)data);
 
 	int	rt = SSLSend(data,len);
+	printf("Send: %.*s\n", len, data);
 
 	//TODO: onerror socket io
     if(SOCKET_ERROR == rt)
@@ -1221,7 +1222,9 @@ int CUT_WSClient::Receive(LPSTR data,int maxLen,int timeOut){
         if(WaitForReceive(timeOut,0) != UTE_SUCCESS)
             return 0;
     }
-    return SSLReceive(data,maxLen);
+    auto ret = SSLReceive(data,maxLen);
+	printf("Recv: %.*s\r\n", ret, data);
+	return ret;
 
 }
 
@@ -1434,6 +1437,7 @@ int CUT_WSClient::ReceiveLine(LPSTR data,int maxDataLen,int timeOut){
 
 		// look at the data coming in
 		rt = SSLReceive(tempBuf,maxDataLen, true);
+		printf("Recv: %.*s\r\n", rt, tempBuf);
 		//error checking
 		if(rt < 1 ) {
 			break;

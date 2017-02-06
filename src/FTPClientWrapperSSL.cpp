@@ -129,7 +129,7 @@ int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files,
 		return OnReturn(-1);
 	}
 
-	bool endslash = path[strlen(path)-1] == serverTraits.separators;
+	bool endslash = serverTraits.hasRoot ? path[strlen(path)-1] == serverTraits.separators : true;
 
 	if (retcode != UTE_SUCCESS)
 	{
@@ -165,7 +165,16 @@ int FTPClientWrapperSSL::GetDir(const char * path, FTPFile** files,
 		if (!endslash) {
 			strcat(ftpfile.filePath, &serverTraits.separators);
 		}
-		strcat(ftpfile.filePath, nameCpy);
+		if (serverTraits.enclosure == 0)
+			strcat(ftpfile.filePath, nameCpy);
+		else {
+			ftpfile.filePath[strlen(ftpfile.filePath) - 1] = '\0';
+			strcat(ftpfile.filePath, nameCpy);
+			ftpfile.filePath[strlen(ftpfile.filePath) + (di.isDir ? 2 : 1)] = '\0';
+			if (di.isDir)
+				ftpfile.filePath[strlen(ftpfile.filePath)] = serverTraits.separators;
+			ftpfile.filePath[strlen(ftpfile.filePath) + (di.isDir ? 1 : 0)] = serverTraits.enclosure;
+		}
 /*
 		char * fullName = nameCpy;
 		if (linkLocation != NULL) {
